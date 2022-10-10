@@ -1,0 +1,81 @@
+<?php
+
+  require_once 'Parcela.php';
+  // Essa classe abstrai um Financiamento pelo Sistema Francês de Amortização
+  // O objetivo é simular as prestações de um empréstimo.
+  // O usuário deve ser capaz de visualizar o valor de cada prestação, os juros pagos em cada uma delas, o valor amortizado (pago do total devido)
+  // e o valor atualizado de sua dívida (saldo devedor) após cada pagamento.
+  // Siga os passos descritos em cada comentário para obter o resultado.
+  class Financiamento{
+
+    private $valorFinanciado;
+    private $juros;
+    private $quantidadePrestacoes;
+
+    public function __construct($valorFinanciado, $juros, $quantidadePrestacoes){
+      $this->valorFinanciado = $valorFinanciado;
+      $this->juros = $juros;
+      $this->quantidadePrestacoes = $quantidadePrestacoes;
+    }
+
+    // O Fator Acumulado de Capitalização do Financiamento é determinado por (1 + taxa de juros) elevado à
+    // potência da quantidade de prestações
+    // IMPLEMENTE A FUNÇÃO QUE REALIZA ESSE CÁLCULO - A SAÍDA ESPERADA QUANDO juros = 0.05 e quantidadePrestacoes = 36 é 5.791816136
+    private function calcularFatorAcumuladoCapitalizacao(){
+        return pow((1 + $this->juros), $this->quantidadePrestacoes);
+    }
+
+    // O coeficiente Price é utilizado para calcular o valor de cada parcela; de forma a garantir que cada
+    // parcela terá o mesmo valor sob o regime de juros compostos; ele é determinado por uma divisão na qual
+    // o numerador é o Fator Acumulado de Capitalização multiplicado pela taxa de juros - e o denominador
+    // é o Fator Acumulado de Capitalização subtraído o inteiro 1
+    // IMPLEMENTE A FUNÇÃO QUE REALIZA ESSE CÁLCULO - A SAÍDA ESPERADA QUANDO $fatorAcumuladoCapitalizacao = 5.791816136 e $juros = 0.05
+    // é 0.060434457
+    private function calcularCoeficientePrice(){
+        return ($this->calcularFatorAcumuladoCapitalizacao() * $this->juros) / ($this->calcularFatorAcumuladoCapitalizacao() - 1);
+    }
+
+    // O valor da prestação é determinado pelo valor financiado multiplicado pelo coeficiente price.
+    // IMPLEMENTE A FUNÇÃO QUE CALCULA O VALOR DA PRESTAÇÃO PARA ESSE FINANCIAMENTO
+    // A SAÍDA ESPERADA QUANDO juros = 0.05, quantidadePrestacoes = 36 e valorFinanciado = 15000 é de 906.52
+    // já arredondado para duas casas decimais;
+    private function calcularValorPrestacao(){
+        return round($this->valorFinanciado * $this->calcularCoeficientePrice(),2);
+    }
+
+    // Um objeto Parcela é composto pelo seu valor (calculado anteriormente), os juros pagos
+    // nessa parcela ( juros * $saldoDevedor), o valor amortizado (valor da parcela - juros pagos)
+    // e o saldoDevedorAtual (que será o $saldoDevedor - valorAmortizado da parcela);
+    // IMPLEMENTE O MÉTODO QUE CRIA UM OBJETO DO TIPO PARCELA PASSANDO COMO PARÂMETRO PARA O CONTRUTOR 
+    // O VALOR DA PRESTAÇÃO, OS JUROS PAGOS, O VALOR DA AMORTIZAÇÃO E O SALDO DEVEDOR ATUALIZADO
+    private function criarParcela($saldoDevedor){
+      $valor = $this->calcularValorPrestacao();
+      $jurosPagos = round($saldoDevedor * $this->juros,2);
+      $valorAmortizado = round($this->calcularValorPrestacao() - ($saldoDevedor * $this->juros),2);
+      $saldoDevedorAtual = round($saldoDevedor - $valorAmortizado,2);
+
+      return $parcela = new Parcela($valor, $jurosPagos, $valorAmortizado, $saldoDevedorAtual);
+    }
+
+    // O demonstrativo de pagamento do financiamento deve trazer os valores pagos
+    // à cada parcela; você deve retornar um vetor de objetos do tipo Parcela - a cada parcela paga
+    // do valor do Saldo Devedor (que inicialmente é o valor do Finaciamento)
+    // deve ser atualizado e na última parcela deverá estar pago
+    public function gerarDemonstrativoPagamento(){
+        $saldoDevedorAtual = $this->valorFinanciado;
+        $teste = $this->criarParcela($saldoDevedorAtual);
+        $arrayObjetos[0] = $teste;
+        $i = 1;
+
+        while($saldoDevedorAtual >= 1000){
+            $saldoDevedorAtual = $teste->getSaldoDevedorAtual();
+            $teste = $this->criarParcela($saldoDevedorAtual);
+            $arrayObjetos[$i] = $teste;
+            $i++;
+        }
+
+        return $arrayObjetos;
+    }
+  }
+
+?>
